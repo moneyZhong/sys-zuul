@@ -43,4 +43,11 @@ public class HMACSHA1Encoder {
         return result;
     }
 
+    public static void main(String[] args) throws Exception {
+        // httpRequest.getMethod() + "\n" + httpRequest.getParameter("timestamp") + "\n" + httpRequest.getRequestURI();
+        String strToSign = "POST"+"\n"+"14343434"+"\n"+"/v1/sys-bus/file/att/upload";
+        String key = calculateRFC2104HMAC("key", strToSign);
+        System.out.println(key);
+    }
+
 }

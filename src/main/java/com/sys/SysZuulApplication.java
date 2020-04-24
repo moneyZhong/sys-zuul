@@ -5,10 +5,13 @@ import com.sys.filter.CrossFilter;
 import com.sys.filter.ErrorFilter;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.cloud.netflix.zuul.EnableZuulProxy;
 import org.springframework.cloud.netflix.zuul.filters.discovery.PatternServiceRouteMapper;
 import org.springframework.context.annotation.Bean;
+import org.springframework.cloud.netflix.hystrix.dashboard.EnableHystrixDashboard;
 
+@EnableHystrixDashboard
 @EnableZuulProxy
 @SpringBootApplication
 public class SysZuulApplication {

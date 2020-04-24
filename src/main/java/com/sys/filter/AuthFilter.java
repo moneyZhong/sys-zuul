@@ -10,7 +10,9 @@ import com.sys.util.HMACSHA1Encoder;
 
 import org.springframework.util.StringUtils;
 
+import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 
 import java.awt.*;
 import java.security.SignatureException;
@@ -46,16 +48,23 @@ public class AuthFilter extends ZuulFilter {
     @Override
     public Object run() throws ZuulException {
         RequestContext context = getCurrentContext();
+        //x-www-form-urlencoded
         HttpServletRequest request = context.getRequest();
-        if(!isContainNeedPamam(request)){
+
+        //支持文件上传参数获取form-data
+        HttpServletRequestWrapper httpServletRequestWrapper = (HttpServletRequestWrapper) request;
+        String sign = httpServletRequestWrapper.getRequest().getParameter("sign");
+        ServletRequest requestWarp = httpServletRequestWrapper.getRequest();
+
+        if(!isContainNeedPamam(requestWarp)){
            throw new BizException(CommErrEnum.BODY_NOT_MATCH);
         }
-        String g7timestamp = request.getParameter("g7timestamp");
+        String timestamp = requestWarp.getParameter("timestamp");
         final Long currentTime = System.currentTimeMillis();
-        if(currentTime - Long.valueOf(g7timestamp)  > FIFTEEN_MIN){
+        if(currentTime - Long.valueOf(timestamp)  > FIFTEEN_MIN){
 //            throw new BizException(CommErrEnum.REQUEST_TIME_OVER_FINFTEEN_MIN);
         }
-        if(!checkSign(request)){
+        if(!checkSign(request,requestWarp)){
             throw new BizException(CommErrEnum.SIGNATURE_NOT_RIGHT);
         }
         String token = context.getRequest().getHeader("token");
@@ -67,8 +76,8 @@ public class AuthFilter extends ZuulFilter {
      * @param httpRequest
      * @return
      */
-    private Boolean isContainNeedPamam(HttpServletRequest httpRequest){
-        if(StringUtils.isEmpty(httpRequest.getParameter("g7timestamp")) ||
+    private Boolean isContainNeedPamam(ServletRequest httpRequest){
+        if(StringUtils.isEmpty(httpRequest.getParameter("timestamp")) ||
                 StringUtils.isEmpty(httpRequest.getParameter("sign")) ||
                 StringUtils.isEmpty(httpRequest.getParameter("accessid"))){
             return false;
@@ -80,15 +89,15 @@ public class AuthFilter extends ZuulFilter {
      * 校验签名
      * @return
      */
-    private Boolean checkSign(HttpServletRequest httpRequest){
-        String signStr = httpRequest.getMethod() + "\n" + httpRequest.getParameter("g7timestamp") + "\n" + httpRequest.getRequestURI();
-        String secret = keySet.get( httpRequest.getParameter("accessid"));
+    private Boolean checkSign(HttpServletRequest httpRequest,ServletRequest requestWrap){
+        String signStr = httpRequest.getMethod() + "\n" + requestWrap.getParameter("timestamp") + "\n" + httpRequest.getRequestURI();
+        String secret = keySet.get( requestWrap.getParameter("accessid"));
         if(StringUtils.isEmpty(secret)){
             throw new BizException(CommErrEnum.SIGNATURE_NOT_MATCH);
         }
         try {
             String genSign = HMACSHA1Encoder.calculateRFC2104HMAC(secret,signStr);
-            if(httpRequest.getParameter("sign").equals(genSign)){
+            if(requestWrap.getParameter("sign").equals(genSign)){
                return true;
             }
         } catch (SignatureException e) {
