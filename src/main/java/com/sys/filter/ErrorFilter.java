@@ -7,14 +7,10 @@ import com.sys.exception.BizException;
 import com.sys.vo.ResultBody;
 import lombok.extern.slf4j.Slf4j;
 
-
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Objects;
-
-import com.google.gson.Gson;
-import org.slf4j.LoggerFactory;
 @Slf4j
 public class ErrorFilter extends ZuulFilter {
 
@@ -44,7 +40,7 @@ public class ErrorFilter extends ZuulFilter {
                 resultBody = ResultBody.builder().code(bizException.getErrorCode()).msg(bizException.getErrorMsg()).build();
             }
             if (Objects.isNull(resultBody)) {
-                resultBody  = ResultBody.builder().code("500").msg(re.getMessage()).build();
+                resultBody  = ResultBody.builder().code("500").msg(re.getLocalizedMessage()).build();
             }
         } catch (Exception e) {
             String error = "Error during filtering[ErrorFilter]";

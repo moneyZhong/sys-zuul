@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Logger;
 
+/**
+ * https://cloud.tencent.com/developer/article/1333796
+ */
 @Component
 public class ApiFallbackProvider implements FallbackProvider {
 

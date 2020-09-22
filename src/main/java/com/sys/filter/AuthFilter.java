@@ -1,26 +1,27 @@
 package com.sys.filter;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
+import com.sys.entity.AccessInfoDO;
 import com.sys.enums.CommErrEnum;
 import com.sys.exception.BizException;
-
+import com.sys.service.AccessInfoService;
 import com.sys.util.HMACSHA1Encoder;
-
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
-
-import java.awt.*;
 import java.security.SignatureException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 
 import static com.netflix.zuul.context.RequestContext.getCurrentContext;
 
+@Slf4j
 public class AuthFilter extends ZuulFilter {
     private final static Long FIFTEEN_MIN = 15*60*1000L;
 
@@ -39,11 +40,8 @@ public class AuthFilter extends ZuulFilter {
         return true;
     }
 
-    public static Map<String,String> keySet;
-    static {
-        keySet = new HashMap<>();
-        keySet.put("accessId","key");
-    }
+    @Autowired
+    private AccessInfoService accessInfoService;
 
     @Override
     public Object run() throws ZuulException {
@@ -57,7 +55,7 @@ public class AuthFilter extends ZuulFilter {
         ServletRequest requestWarp = httpServletRequestWrapper.getRequest();
 
         if(!isContainNeedPamam(requestWarp)){
-           throw new BizException(CommErrEnum.BODY_NOT_MATCH);
+//           throw new BizException(CommErrEnum.BODY_NOT_MATCH);
         }
         String timestamp = requestWarp.getParameter("timestamp");
         final Long currentTime = System.currentTimeMillis();
@@ -68,6 +66,7 @@ public class AuthFilter extends ZuulFilter {
             throw new BizException(CommErrEnum.SIGNATURE_NOT_RIGHT);
         }
         String token = context.getRequest().getHeader("token");
+
         return null;
     }
 
@@ -91,7 +90,14 @@ public class AuthFilter extends ZuulFilter {
      */
     private Boolean checkSign(HttpServletRequest httpRequest,ServletRequest requestWrap){
         String signStr = httpRequest.getMethod() + "\n" + requestWrap.getParameter("timestamp") + "\n" + httpRequest.getRequestURI();
-        String secret = keySet.get( requestWrap.getParameter("accessid"));
+        QueryWrapper queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq(AccessInfoDO.ACCESS_KEY, requestWrap.getParameter("accessid"));
+        AccessInfoDO one = accessInfoService.getOne(queryWrapper);
+        if(Objects.isNull(one)){
+            log.info("accessid 不正确..{0}",requestWrap.getParameter("accessid"));
+            return false;
+        }
+        String secret = one.getAccessSecret();
         if(StringUtils.isEmpty(secret)){
             throw new BizException(CommErrEnum.SIGNATURE_NOT_MATCH);
         }

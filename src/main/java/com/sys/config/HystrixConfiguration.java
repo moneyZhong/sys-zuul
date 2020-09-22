@@ -5,6 +5,11 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 开启访问Hystri.stream入口
+ * 配置完成后重启启动zuul，访问 http://localhost:8888/hystrix.stream 或者
+ * http://localhost:8888/actuator/hystrix.stream
+ */
 @Configuration
 public class HystrixConfiguration {
 
